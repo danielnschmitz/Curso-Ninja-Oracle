@@ -14,7 +14,7 @@ CREATE OR REPLACE PACKAGE PACK_NOTAFISCAL IS
   ------------------------------------------------------------------------------------------
   ------------------------------------------------------------------------------------------                       
   PROCEDURE INSERE_cARRO (I_NR_PLACA      IN CARRO.NR_PLACA%TYPE,
-                          I_DS_MODELO     IN CARRO.DS_MODELO%TYPE,
+                          I_DS_MODELO     IN VARCHAR2,
                           I_DT_COMPRA     IN CARRO.DT_COMPRA%TYPE,
                           I_VL_VENDA      IN CARRO.VL_VENDA%TYPE,
                           I_NR_ANOMODELO  IN CARRO.NR_ANOMODELO%TYPE,
@@ -95,13 +95,13 @@ CREATE OR REPLACE PACKAGE BODY PACK_NOTAFISCAL IS
   ------------------------------------------------------------------------------------------
   ------------------------------------------------------------------------------------------
   --1. Criar um procedimento para inserir/atualizar o carro (sem a informação de pessoa)
-  PROCEDURE INSERE_cARRO (I_NR_PLACA      IN CARRO.NR_PLACA%TYPE,
-                          I_DS_MODELO     IN CARRO.DS_MODELO%TYPE,
+  PROCEDURE INSERE_CARRO (I_NR_PLACA      IN CARRO.NR_PLACA%TYPE,
+                          I_DS_MODELO     IN VARCHAR2,
                           I_DT_COMPRA     IN CARRO.DT_COMPRA%TYPE,
                           I_VL_VENDA      IN CARRO.VL_VENDA%TYPE,
                           I_NR_ANOMODELO  IN CARRO.NR_ANOMODELO%TYPE,
                           O_MENSAGEM      OUT VARCHAR2) IS
-  
+    E_GERAL EXCEPTION;
   BEGIN
     BEGIN
       INSERT INTO CARRO(
@@ -128,14 +128,20 @@ CREATE OR REPLACE PACKAGE BODY PACK_NOTAFISCAL IS
         EXCEPTION
           WHEN OTHERS THEN
             O_MENSAGEM := 'Erro ao atualizar veículo. Erro: '||SQLERRM;
+            RAISE E_GERAL;
         END;
       WHEN OTHERS THEN
         O_MENSAGEM := 'Erro ao inserir veículo. Erro: '||SQLERRM;
+        RAISE E_GERAL;
     END;
     
     COMMIT;
     
+    --CARRO CADASTRADO
+    
   EXCEPTION
+    WHEN E_GERAL THEN
+      O_MENSAGEM := '[INSERE_CARRO] '||O_MENSAGEM;
     WHEN OTHERS THEN
       O_MENSAGEM := 'Erro no procedimento que insere o carro: '||SQLERRM;
   END;                
