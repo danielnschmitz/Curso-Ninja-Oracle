@@ -31,6 +31,8 @@ CREATE OR REPLACE PACKAGE PACK_NOTAFISCAL IS
   ------------------------------------------------------------------------------------------
   ------------------------------------------------------------------------------------------
   ------------------------------------------------------------------------------------------
+  PROCEDURE EXCLUI_CARRO (I_NR_PLACA   IN CARRO.NR_PLACA%TYPE,
+                          O_MENSAGEM   OUT VARCHAR2);
   
 END PACK_NOTAFISCAL;
 /
@@ -42,6 +44,7 @@ CREATE OR REPLACE PACKAGE BODY PACK_NOTAFISCAL IS
                          I_DT_COMPRA   IN NOTAFISCAL.DT_COMPRA%TYPE,
                          O_MENSAGEM    OUT VARCHAR2) IS
     V_NR_NOTA NOTAFISCAL.NR_NOTA%TYPE;
+    E_GERAL   EXCEPTION;
   BEGIN
     
     SELECT MAX(NOTAFISCAL.NR_NOTA)
@@ -80,14 +83,18 @@ CREATE OR REPLACE PACKAGE BODY PACK_NOTAFISCAL IS
         EXCEPTION
           WHEN OTHERS THEN
             O_MENSAGEM := 'Erro ao atualizar nota. Erro: '||SQLERRM;
+            RAISE E_GERAL;
         END;
       WHEN OTHERS THEN
         O_MENSAGEM := 'ERRO: '||SQLERRM;
+        RAISE E_GERAL;
     END;
     
     COMMIT;
     
   EXCEPTION
+    WHEN E_GERAL THEN
+      O_MENSAGEM := '[INSERE NOTA] '||O_MENSAGEM;
     WHEN OTHERS THEN
       O_MENSAGEM := 'Erro ao inserir nota fiscal. Erro: '||SQLERRM;
   END;
@@ -156,7 +163,33 @@ CREATE OR REPLACE PACKAGE BODY PACK_NOTAFISCAL IS
                            I_NR_ALTURA     IN PESSOA.NR_ALTURA%TYPE,
                            O_MENSAGEM      OUT VARCHAR2) IS
     V_ID_PESSOA PESSOA.ID_PESSOA%TYPE;
+    E_GERAL     EXCEPTION;
   BEGIN
+    
+    IF I_NM_PESSOA IS NULL THEN
+      O_MENSAGEM := 'O nome precisa ser informado!';
+      RAISE E_GERAL;
+    END IF;
+    
+    IF I_NR_CPF IS NULL THEN
+      O_MENSAGEM := 'O CPF precisa ser informado!';
+      RAISE E_GERAL;
+    END IF;
+    
+    IF I_DT_NASCIMENTO IS NULL THEN
+      O_MENSAGEM := 'A data de nascimento precisa ser informada!';
+      RAISE E_GERAL;
+    END IF;
+    
+    IF LENGTH(I_NR_CPF) <> 11 THEN
+      O_MENSAGEM := 'CPF informado é inválido!';
+      RAISE E_GERAL;
+    END IF;
+    
+    IF INSTR(I_NM_PESSOA,' ') = 0 THEN
+      O_MENSAGEM := 'Precisa ser informado o nome completo!';
+      RAISE E_GERAL;
+    END IF;
     
     BEGIN
       SELECT MAX(PESSOA.ID_PESSOA)
@@ -194,17 +227,47 @@ CREATE OR REPLACE PACKAGE BODY PACK_NOTAFISCAL IS
         EXCEPTION
           WHEN OTHERS THEN
             O_MENSAGEM := 'Erro ao atualizar pessoa. Erro: '||SQLERRM;
+            RAISE E_GERAL;
         END;
       WHEN OTHERS THEN
         O_MENSAGEM := 'Erro ao inserir pessoa. Erro: '||SQLERRM;
+        RAISE E_GERAL;
     END;
     
     COMMIT;
     
   EXCEPTION
+    WHEN E_GERAL THEN
+      O_MENSAGEM := 'INSERE_PESSOA] '||O_MENSAGEM;
     WHEN OTHERS THEN
       O_MENSAGEM := 'Erro no procedimento que insere uma pessoa: '||SQLERRM;
   END;
- 
+  ------------------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------------------
+  PROCEDURE EXCLUI_CARRO (I_NR_PLACA   IN CARRO.NR_PLACA%TYPE,
+                          O_MENSAGEM   OUT VARCHAR2) IS
+    E_GERAL EXCEPTION;
+  BEGIN
+    IF I_NR_PLACA IS NULL THEN
+      O_MENSAGEM := 'Informe a placa';
+      RAISE E_GERAL;
+    END IF;
+    
+    BEGIN
+      DELETE CARRO
+       WHERE NR_PLACA = I_NR_PLACA;
+    EXCEPTION
+      WHEN OTHERS THEN
+        O_MENSAGEM := 'Erro ao excluir carro: '||SQLERRM;
+    END;
+    
+    COMMIT;
+  EXCEPTION
+    WHEN E_GERAL THEN
+      O_MENSAGEM := '[EXCLUI_CARRO] '||O_MENSAGEM;
+    WHEN OTHERS THEN
+      O_MENSAGEM := 'Erro no procedimento de exclusão de carro: '||SQLERRM;
+  END;
 END PACK_NOTAFISCAL;
 /
