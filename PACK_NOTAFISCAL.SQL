@@ -46,7 +46,7 @@ CREATE OR REPLACE PACKAGE BODY PACK_NOTAFISCAL IS
         I_VL_NOTA,
         I_DS_VENDEDOR,
         I_DS_CLIENTE,
-        I_DT_COMPRA);
+        SYSDATE);
     EXCEPTION
       WHEN DUP_VAL_ON_INDEX THEN
         BEGIN
@@ -60,12 +60,23 @@ CREATE OR REPLACE PACKAGE BODY PACK_NOTAFISCAL IS
           WHEN OTHERS THEN
             O_MENSAGEM := 'Erro ao atualizar nota. Erro: '||SQLERRM;
         END;
+      WHEN OTHERS THEN
+        O_MENSAGEM := 'ERRO: '||SQLERRM;
     END;
+    
+    COMMIT;
     
   EXCEPTION
     WHEN OTHERS THEN
       O_MENSAGEM := 'Erro ao inserir nota fiscal. Erro: '||SQLERRM;
   END;
+  ------------------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------------------
+  /*
+  1. Criar um procedimento para inserir/atualizar o carro (sem a informação de pessoa)
+  2. Criar um procedimento para inserir/atualizar uma pessoa
+  */
  
 END PACK_NOTAFISCAL;
 /
