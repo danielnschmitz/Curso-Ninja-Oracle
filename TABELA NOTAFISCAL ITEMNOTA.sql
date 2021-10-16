@@ -24,8 +24,41 @@ CREATE TABLE ITEMNOTA(
 
 /*
 INSIRA OS DADOS DE DUAS NOTAS, E DEPOIS PARA A PRIMEIRA NOTA, INSIRA 3 ITENS.
-FAÇA UMA CONSULTA TRAZENDO, OS ITENS JUNTO COM A DESCRIÇÃO DO CLIENTE
+FAÇA UMA CONSULTA TRAZENDO, OS ITENS JUNTO COM A DESCRIÇÃO DO CLIENTE QUE COMPROU O ITEM
 */
+INSERT INTO NOTAFISCAL(NR_NOTA,
+                       VL_NOTA,
+                       DS_VENDEDOR,
+                       DS_CLIENTE,
+                       DT_COMPRA) VALUES (1,85,'DANIEL NATAN','CANT YOU SEE','15/10/2021');
 
+INSERT INTO NOTAFISCAL(NR_NOTA,
+                       VL_NOTA,
+                       DS_VENDEDOR,
+                       DS_CLIENTE,
+                       DT_COMPRA) VALUES (2,95.30,'DANIEL NATAN','CANT YOU SEE','20/10/2021');
 
+INSERT INTO ITEMNOTA(ID_ITEM,
+                     VL_ITEM,
+                     DS_ITEM,
+                     NR_NOTA) VALUES (1,50,'ITEM 1',2);
 
+INSERT INTO ITEMNOTA(ID_ITEM,
+                     VL_ITEM,
+                     DS_ITEM,
+                     NR_NOTA) VALUES (2,20.20,'ITEM 2',2);
+
+INSERT INTO ITEMNOTA(ID_ITEM,
+                     VL_ITEM,
+                     DS_ITEM,
+                     NR_NOTA) VALUES (3,20.10,'ITEM 3',2);
+
+SELECT * FROM NOTAFISCAL;
+SELECT * FROM ITEMNOTA;
+
+SELECT ITEMNOTA.*, 
+       NOTAFISCAL.DS_CLIENTE
+  FROM ITEMNOTA, 
+       NOTAFISCAL
+ WHERE ITEMNOTA.NR_NOTA = NOTAFISCAL.NR_NOTA
+ 
