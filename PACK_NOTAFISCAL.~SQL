@@ -41,6 +41,11 @@ CREATE OR REPLACE PACKAGE PACK_NOTAFISCAL IS
                              I_DS_ITEM  IN ITEMNOTA.DS_ITEM%TYPE,
                              I_NR_NOTA  IN ITEMNOTA.NR_NOTA%TYPE,
                              O_MENSAGEM OUT VARCHAR2);
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  FUNCTION RETORNA_QUANTIDADECARROS (I_NR_ANOMODELO IN CARRO.NR_ANOMODELO%TYPE)
+                                                     RETURN NUMBER;
   
 END PACK_NOTAFISCAL;
 /
@@ -329,6 +334,7 @@ CREATE OR REPLACE PACKAGE BODY PACK_NOTAFISCAL IS
     END;
     
     V_ID_ITEM := V_ID_ITEM + 1;
+    V_ID_ITEM := NVL(I_ID_ITEM,V_ID_ITEM);
     
     BEGIN
       INSERT INTO ITEMNOTA(
@@ -337,7 +343,7 @@ CREATE OR REPLACE PACKAGE BODY PACK_NOTAFISCAL IS
         DS_ITEM,
         NR_NOTA)
       VALUES(
-        NVL(I_ID_ITEM,V_ID_ITEM),
+        V_ID_ITEM,
         I_VL_ITEM,
         I_DS_ITEM,
         I_NR_NOTA);
@@ -363,6 +369,25 @@ CREATE OR REPLACE PACKAGE BODY PACK_NOTAFISCAL IS
       O_MENSAGEM := '[INSERE_ITEMNOTA] '||O_MENSAGEM;
     WHEN OTHERS THEN
       O_MENSAGEM := 'Erro no procedimento que insere nota: '||SQLERRM;
+  END;
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  FUNCTION RETORNA_QUANTIDADECARROS (I_NR_ANOMODELO IN CARRO.NR_ANOMODELO%TYPE)
+                                                     RETURN NUMBER IS
+    V_COUNT NUMBER;
+  BEGIN
+    
+    SELECT COUNT(*)
+      INTO V_COUNT
+      FROM CARRO
+     WHERE CARRO.NR_ANOMODELO = I_NR_ANOMODELO;
+     
+    RETURN V_COUNT;
+    
+  EXCEPTION
+    WHEN OTHERS THEN
+      RETURN NULL;
   END;
 END PACK_NOTAFISCAL;
 /
