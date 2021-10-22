@@ -33,6 +33,14 @@ CREATE OR REPLACE PACKAGE PACK_NOTAFISCAL IS
   ------------------------------------------------------------------------------------------
   PROCEDURE EXCLUI_CARRO (I_NR_PLACA   IN CARRO.NR_PLACA%TYPE,
                           O_MENSAGEM   OUT VARCHAR2);
+  ------------------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------------------
+  PROCEDURE INSERE_ITEMNOTA (I_ID_ITEM  IN ITEMNOTA.ID_ITEM%TYPE,
+                             I_VL_ITEM  IN ITEMNOTA.VL_ITEM%TYPE,
+                             I_DS_ITEM  IN ITEMNOTA.DS_ITEM%TYPE,
+                             I_NR_NOTA  IN ITEMNOTA.NR_NOTA%TYPE,
+                             O_MENSAGEM OUT VARCHAR2);
   
 END PACK_NOTAFISCAL;
 /
@@ -268,6 +276,93 @@ CREATE OR REPLACE PACKAGE BODY PACK_NOTAFISCAL IS
       O_MENSAGEM := '[EXCLUI_CARRO] '||O_MENSAGEM;
     WHEN OTHERS THEN
       O_MENSAGEM := 'Erro no procedimento de exclusão de carro: '||SQLERRM;
+  END;
+  ------------------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------------------
+  ------------------------------------------------------------------------------------------
+  PROCEDURE INSERE_ITEMNOTA (I_ID_ITEM  IN ITEMNOTA.ID_ITEM%TYPE,
+                             I_VL_ITEM  IN ITEMNOTA.VL_ITEM%TYPE,
+                             I_DS_ITEM  IN ITEMNOTA.DS_ITEM%TYPE,
+                             I_NR_NOTA  IN ITEMNOTA.NR_NOTA%TYPE,
+                             O_MENSAGEM OUT VARCHAR2) IS
+    E_GERAL    EXCEPTION;
+    V_ID_ITEM  ITEMNOTA.ID_ITEM%TYPE;
+    V_COUNT    NUMBER;
+  BEGIN
+    IF I_VL_ITEM IS NULL THEN
+      O_MENSAGEM := 'O valor do item precisa ser informado';
+      RAISE E_GERAL;
+    END IF;
+    
+    IF I_DS_ITEM IS NULL THEN
+      O_MENSAGEM := 'A descrição precisa ser informada';
+      RAISE E_GERAL;
+    END IF;
+    
+    IF I_NR_NOTA IS NULL THEN
+      O_MENSAGEM := 'O número da nota, precisa ser informado';
+      RAISE E_GERAL;
+    END IF;
+    
+    BEGIN
+      SELECT COUNT(*)
+        INTO V_COUNT
+        FROM NOTAFISCAL
+       WHERE NOTAFISCAL.NR_NOTA = I_NR_NOTA;
+    EXCEPTION
+      WHEN OTHERS THEN
+        V_COUNT := 0;
+    END;
+    
+    IF V_COUNT = 0 THEN
+      O_MENSAGEM := 'Nota '||I_NR_NOTA||' não cadastrada';
+      RAISE E_GERAL;
+    END IF;
+    
+    BEGIN
+      SELECT MAX(ITEMNOTA.ID_ITEM)
+        INTO V_ID_ITEM
+        FROM ITEMNOTA;
+    EXCEPTION
+      WHEN OTHERS THEN
+        V_ID_ITEM := 0;
+    END;
+    
+    V_ID_ITEM := V_ID_ITEM + 1;
+    
+    BEGIN
+      INSERT INTO ITEMNOTA(
+        ID_ITEM,
+        VL_ITEM,
+        DS_ITEM,
+        NR_NOTA)
+      VALUES(
+        NVL(I_ID_ITEM,V_ID_ITEM),
+        I_VL_ITEM,
+        I_DS_ITEM,
+        I_NR_NOTA);
+    EXCEPTION
+      WHEN DUP_VAL_ON_INDEX THEN
+        BEGIN
+          UPDATE ITEMNOTA
+             SET VL_ITEM = I_VL_ITEM,
+                 DS_ITEM = I_DS_ITEM
+           WHERE ID_ITEM = I_ID_ITEM;
+        EXCEPTION
+          WHEN OTHERS THEN
+            O_MENSAGEM := 'Erro ao atulizar o item: '||SQLERRM;
+        END;
+      WHEN OTHERS THEN
+        O_MENSAGEM := 'Erro ao inserir nota: '||SQLERRM;
+    END;
+    
+    COMMIT;
+    
+  EXCEPTION
+    WHEN E_GERAL THEN
+      O_MENSAGEM := '[INSERE_ITEMNOTA] '||O_MENSAGEM;
+    WHEN OTHERS THEN
+      O_MENSAGEM := 'Erro no procedimento que insere nota: '||SQLERRM;
   END;
 END PACK_NOTAFISCAL;
 /
