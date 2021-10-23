@@ -39,12 +39,3 @@ SELECT NOTAFISCAL.DS_VENDEDOR,
        MAX(NOTAFISCAL.VL_NOTA)
   FROM NOTAFISCAL
  GROUP BY NOTAFISCAL.DS_VENDEDOR
- 
-1- Realize um consulta onde traga, em ordem, o número da nota, a descrição do item da nota e o valor da nota;
-2- Realize uma consulta onde traga o numero da nota, o valor da nota , a descrição do vendedor e a data de compra;
-3- Realize uma consulta onde traga o maior valor de venda entre todas as notas;
-4- Realize uma consulta onde traga o menor número de nota que você possua;
-5- Realize uma consulta onde traga a quantidade de itens que você possui cadastrados;
-6- Realize uma consulta onde traga a tudo sobre os seus itens cadastrados ordenando do maior código para o menor;
-7- Realize uma consulta onde traga  todas as notas e todos os seus itens cadastrados;
-8- Realize uma consulta onde traga todos os carros e seus respectivos anos
