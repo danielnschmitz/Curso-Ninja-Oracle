@@ -3,6 +3,15 @@ CREATE OR REPLACE PACKAGE PACK_POSTO IS
                               I_DS_COMBUSTIVEL  IN COMBUSTIVEL.DS_COMBUSTIVEL%TYPE,
                               I_VL_COMBUSTIVEL  IN COMBUSTIVEL.VL_COMBUSTIVEL%TYPE,
                               O_MENSAGEM        OUT VARCHAR2);
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  PROCEDURE GRAVA_PROPRIETARIO(IO_CD_PROPRIETARIO IN OUT PROPRIETARIO.CD_PROPRIETARIO%TYPE,
+                               I_NM_PROPRIETARIO  IN PROPRIETARIO.NM_PROPRIETARIO%TYPE,
+                               I_NR_CNPJCPF       IN PROPRIETARIO.NR_CNPJCPF%TYPE,
+                               I_DS_ENDERECO      IN PROPRIETARIO.DS_ENDERECO%TYPE,
+                               I_NR_TELEFONE      IN PROPRIETARIO.NR_TELEFONE%TYPE,
+                               O_MENSAGEM         OUT VARCHAR2);
 END PACK_POSTO;
 /
 CREATE OR REPLACE PACKAGE BODY PACK_POSTO IS
@@ -91,7 +100,7 @@ CREATE OR REPLACE PACKAGE BODY PACK_POSTO IS
     END IF;
    
     IF I_NR_CNPJCPF IS NULL THEN
-      O_MENSAGEM := 'O npumero do CPF/CNPJ precisa ser informado.';
+      O_MENSAGEM := 'O número do CPF/CNPJ precisa ser informado.';
       RAISE E_GERAL;
     END IF;
     
@@ -99,8 +108,57 @@ CREATE OR REPLACE PACKAGE BODY PACK_POSTO IS
       O_MENSAGEM := 'Precisa ser informado um número correto de CPF/CNPJ';
       RAISE E_GERAL;
     END IF;
+    
+    IF IO_CD_PROPRIETARIO IS NULL THEN
+      BEGIN
+        SELECT MAX(PROPRIETARIO.CD_PROPRIETARIO)
+          INTO IO_CD_PROPRIETARIO
+          FROM PROPRIETARIO;
+      EXCEPTION
+        WHEN OTHERS THEN
+          IO_CD_PROPRIETARIO := 0;
+      END;
+      IO_CD_PROPRIETARIO := NVL(IO_CD_PROPRIETARIO,0) + 1;
+    END IF;
+    
+    BEGIN
+      INSERT INTO PROPRIETARIO(
+        CD_PROPRIETARIO,
+        NM_PROPRIETARIO,
+        NR_CNPJCPF,
+        DS_ENDERECO,
+        NR_TELEFONE,
+        DT_RECORD)
+      VALUES(
+        IO_CD_PROPRIETARIO,
+        I_NM_PROPRIETARIO,
+        I_NR_CNPJCPF,
+        I_DS_ENDERECO,
+        I_NR_TELEFONE,
+        SYSDATE);
+    EXCEPTION
+      WHEN DUP_VAL_ON_INDEX THEN
+        BEGIN
+          UPDATE PROPRIETARIO
+             SET NM_PROPRIETARIO = NVL(I_NM_PROPRIETARIO,NM_PROPRIETARIO),
+                 NR_CNPJCPF = NVL(I_NR_CNPJCPF,NR_CNPJCPF),
+                 DS_ENDERECO = NVL(I_DS_ENDERECO,DS_ENDERECO),
+                 NR_TELEFONE = NVL(I_NR_TELEFONE,NR_TELEFONE),
+                 DT_REFRESH = SYSDATE
+           WHERE CD_PROPRIETARIO = IO_CD_PROPRIETARIO;
+        EXCEPTION
+          WHEN OTHERS THEN
+            O_MENSAGEM := 'Erro ao atualizar proprietário('||IO_CD_PROPRIETARIO||'): '||SQLERRM;
+            RAISE E_GERAL;
+        END;
+      WHEN OTHERS THEN
+        O_MENSAGEM := 'Erro ao inserir proprietário('||IO_CD_PROPRIETARIO||'): '||SQLERRM;
+        RAISE E_GERAL;
+    END;
+    
+    COMMIT;
   EXCEPTION
-    WHEN E_GERAL THE
+    WHEN E_GERAL THEN
       ROLLBACK;
       O_MENSAGEM := '[GRAVA_PROPRIETARIO] '||O_MENSAGEM;
     WHEN OTHERS THEN
