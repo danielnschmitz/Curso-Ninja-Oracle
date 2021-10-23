@@ -70,6 +70,20 @@ CREATE OR REPLACE PACKAGE PACK_NOTAFISCAL IS
   -----------------------------------------------------------------------------
   -----------------------------------------------------------------------------
   FUNCTION RETORNA_VALORTOTALNOTAS RETURN NUMBER;
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  --Crie uma função que retorne o nome de todos os clientes, sem repetir, em 
+  --uma string separado por vírgulas
+  FUNCTION RETORNA_NOMECLIENTES RETURN VARCHAR2;
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  FUNCTION TESTE_VETOR RETURN VARCHAR2;
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  FUNCTION RETORNA_CLIENTEVALOR RETURN VARCHAR2;
 END PACK_NOTAFISCAL;
 /
 CREATE OR REPLACE PACKAGE BODY PACK_NOTAFISCAL IS
@@ -484,6 +498,104 @@ CREATE OR REPLACE PACKAGE BODY PACK_NOTAFISCAL IS
     END LOOP;
     
     RETURN V_VL_SUMNF;
+  END;
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  --Crie uma função que retorne o nome de todos os clientes, sem repetir, em 
+  --uma string separado por vírgulas
+  FUNCTION RETORNA_NOMECLIENTES RETURN VARCHAR2 IS
+    V_DS_NOMECLIENTES VARCHAR2(32000);
+    
+    V_COUNT NUMBER;
+    
+    CURSOR CUR_CLIENTES IS
+      SELECT DISTINCT NOTAFISCAL.DS_CLIENTE
+        FROM NOTAFISCAL;
+  BEGIN
+    V_COUNT := 0;
+    FOR I IN CUR_CLIENTES LOOP
+      V_COUNT := V_COUNT+1;
+      IF V_COUNT = 1 THEN
+        V_DS_NOMECLIENTES := I.DS_CLIENTE;
+      ELSE
+        V_DS_NOMECLIENTES := V_DS_NOMECLIENTES||', '||I.DS_CLIENTE;
+      END IF;
+    END LOOP;
+    
+    FOR I IN CUR_CLIENTES LOOP
+      IF CUR_CLIENTES%ROWCOUNT = 1 THEN
+        V_DS_NOMECLIENTES := I.DS_CLIENTE;
+      ELSE
+        V_DS_NOMECLIENTES := V_DS_NOMECLIENTES||', '||I.DS_CLIENTE;
+      END IF;
+    END LOOP;
+    
+    RETURN V_DS_NOMECLIENTES;
+  END;
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  FUNCTION TESTE_VETOR RETURN VARCHAR2 IS
+    TYPE T_CLIENTES IS TABLE OF VARCHAR2(100) INDEX BY BINARY_INTEGER;
+    V_CLIENTES T_CLIENTES;
+    
+    V_DS_CLIENTES VARCHAR2(32000);
+    
+    CURSOR CUR_CLIENTES IS
+      SELECT DISTINCT NOTAFISCAL.DS_CLIENTE
+        FROM NOTAFISCAL;
+  BEGIN
+    
+    FOR I IN CUR_CLIENTES LOOP
+      V_CLIENTES(CUR_CLIENTES%ROWCOUNT) := I.DS_CLIENTE;
+    END LOOP;
+    
+    FOR I IN 1..V_CLIENTES.COUNT LOOP
+      IF I = 1 THEN
+        V_DS_CLIENTES := V_CLIENTES(I);
+      ELSE
+        V_DS_CLIENTES := V_DS_CLIENTES||', '||V_CLIENTES(I);
+      END IF;
+    END LOOP;
+    
+    RETURN V_DS_CLIENTES;
+      
+    
+  END;
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  FUNCTION RETORNA_CLIENTEVALOR RETURN VARCHAR2 IS
+    TYPE R_CLIENTE IS RECORD(DS_CLIENTE  NOTAFISCAL.DS_CLIENTE%TYPE,
+                             VL_CLIENTE  NUMBER);
+    TYPE T_CLIENTE IS TABLE OF R_CLIENTE INDEX BY BINARY_INTEGER;
+    V_CLIENTE T_CLIENTE;
+    
+    V_DS_CLIENTES  VARCHAR2(32000);
+    
+    CURSOR CUR_CLIENTES IS
+      SELECT NOTAFISCAL.DS_CLIENTE, SUM(NOTAFISCAL.VL_NOTA) VL_CLIENTE
+        FROM NOTAFISCAL
+       GROUP BY NOTAFISCAL.DS_CLIENTE;
+  BEGIN
+    
+    FOR I IN CUR_CLIENTES LOOP
+      V_CLIENTE(CUR_CLIENTES%ROWCOUNT).DS_CLIENTE := I.DS_CLIENTE;
+      V_CLIENTE(CUR_CLIENTES%ROWCOUNT).VL_CLIENTE := I.VL_CLIENTE;
+    END LOOP;
+    
+    FOR I IN 1..V_CLIENTE.COUNT LOOP
+      IF I = 1 THEN
+        V_DS_CLIENTES := V_CLIENTE(I).DS_CLIENTE||' ('||
+                            V_CLIENTE(I).VL_CLIENTE||')';
+      ELSE
+        V_DS_CLIENTES := V_DS_CLIENTES||', '||V_CLIENTE(I).DS_CLIENTE||' ('||
+                            V_CLIENTE(I).VL_CLIENTE||')';
+      END IF;
+    END LOOP;
+    
+    RETURN V_DS_CLIENTES;
   END;
 END PACK_NOTAFISCAL;
 /
