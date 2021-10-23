@@ -1,5 +1,8 @@
 CREATE OR REPLACE PACKAGE PACK_POSTO IS
-
+  PROCEDURE GRAVA_COMBUSTIVEL(IO_CD_COMBUSTIVEL IN OUT COMBUSTIVEL.CD_COMBUSTIVEL%TYPE,
+                              I_DS_COMBUSTIVEL  IN COMBUSTIVEL.DS_COMBUSTIVEL%TYPE,
+                              I_VL_COMBUSTIVEL  IN COMBUSTIVEL.VL_COMBUSTIVEL%TYPE,
+                              O_MENSAGEM        OUT VARCHAR2);
 END PACK_POSTO;
 /
 CREATE OR REPLACE PACKAGE BODY PACK_POSTO IS
@@ -71,5 +74,39 @@ CREATE OR REPLACE PACKAGE BODY PACK_POSTO IS
       ROLLBACK;
       O_MENSAGEM := '[GRAVA_COMBUSTIVEL] Erro no procedimento que grava combustível: '||SQLERRM;
   END;
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  PROCEDURE GRAVA_PROPRIETARIO(IO_CD_PROPRIETARIO IN OUT PROPRIETARIO.CD_PROPRIETARIO%TYPE,
+                               I_NM_PROPRIETARIO  IN PROPRIETARIO.NM_PROPRIETARIO%TYPE,
+                               I_NR_CNPJCPF       IN PROPRIETARIO.NR_CNPJCPF%TYPE,
+                               I_DS_ENDERECO      IN PROPRIETARIO.DS_ENDERECO%TYPE,
+                               I_NR_TELEFONE      IN PROPRIETARIO.NR_TELEFONE%TYPE,
+                               O_MENSAGEM         OUT VARCHAR2) IS
+    E_GERAL  EXCEPTION;                           
+  BEGIN
+    IF I_NM_PROPRIETARIO IS NULL THEN
+      O_MENSAGEM := 'O nome do proprietário precisa ser informado.';
+      RAISE E_GERAL;
+    END IF;
+   
+    IF I_NR_CNPJCPF IS NULL THEN
+      O_MENSAGEM := 'O npumero do CPF/CNPJ precisa ser informado.';
+      RAISE E_GERAL;
+    END IF;
+    
+    IF LENGTH(I_NR_CNPJCPF) <> 11 AND LENGTH(I_NR_CNPJCPF) <> 14 THEN
+      O_MENSAGEM := 'Precisa ser informado um número correto de CPF/CNPJ';
+      RAISE E_GERAL;
+    END IF;
+  EXCEPTION
+    WHEN E_GERAL THE
+      ROLLBACK;
+      O_MENSAGEM := '[GRAVA_PROPRIETARIO] '||O_MENSAGEM;
+    WHEN OTHERS THEN
+      ROLLBACK;
+      O_MENSAGEM := '[GRAVA_PROPRIETARIO] Erro no procedimento que grava o proprietário: '||SQLERRM;
+  END;
+  
 END PACK_POSTO;
 /
