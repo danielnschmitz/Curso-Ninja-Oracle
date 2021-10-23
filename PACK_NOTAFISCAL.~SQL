@@ -66,6 +66,10 @@ CREATE OR REPLACE PACKAGE PACK_NOTAFISCAL IS
   -- notas foram emitidas por ele
   FUNCTION RETORNA_QTVENDAS_VENDEDOR (I_DS_VENDEDOR IN NOTAFISCAL.DS_VENDEDOR%TYPE)
                                      RETURN NUMBER;
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  FUNCTION RETORNA_VALORTOTALNOTAS RETURN NUMBER;
 END PACK_NOTAFISCAL;
 /
 CREATE OR REPLACE PACKAGE BODY PACK_NOTAFISCAL IS
@@ -463,6 +467,23 @@ CREATE OR REPLACE PACKAGE BODY PACK_NOTAFISCAL IS
   EXCEPTION
     WHEN OTHERS THEN
       RETURN NULL;
+  END;
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
+  FUNCTION RETORNA_VALORTOTALNOTAS RETURN NUMBER IS
+    V_VL_SUMNF  NUMBER;
+    
+    CURSOR CUR_NOTAS IS
+      SELECT NOTAFISCAL.VL_NOTA
+        FROM NOTAFISCAL;
+  BEGIN
+    V_VL_SUMNF := 0; 
+    FOR I IN CUR_NOTAS LOOP
+      V_VL_SUMNF := V_VL_SUMNF + NVL(I.VL_NOTA,0);
+    END LOOP;
+    
+    RETURN V_VL_SUMNF;
   END;
 END PACK_NOTAFISCAL;
 /
