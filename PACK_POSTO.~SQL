@@ -12,6 +12,30 @@ CREATE OR REPLACE PACKAGE PACK_POSTO IS
                                I_DS_ENDERECO      IN PROPRIETARIO.DS_ENDERECO%TYPE,
                                I_NR_TELEFONE      IN PROPRIETARIO.NR_TELEFONE%TYPE,
                                O_MENSAGEM         OUT VARCHAR2);
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  PROCEDURE GRAVA_VEICULO(I_NR_PLACA        IN VEICULO.NR_PLACA%TYPE,
+                          I_CD_COMBUSTIVEL  IN COMBUSTIVEL.CD_COMBUSTIVEL%TYPE,
+                          I_CD_PROPRIETARIO IN PROPRIETARIO.CD_PROPRIETARIO%TYPE,
+                          I_KM_ATUAL        IN VEICULO.KM_ATUAL%TYPE,
+                          O_MENSAGEM        OUT VARCHAR2);
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  PROCEDURE GRAVA_FRENTISTA(IO_CD_FRENTISTA IN OUT FRENTISTA.CD_FRENTISTA%TYPE,
+                            I_NM_FRENTISTA  IN FRENTISTA.NM_FRENTISTA%TYPE,
+                            I_PC_COMISSAO   IN FRENTISTA.PC_COMISSAO%TYPE,
+                            O_MENSAGEM      OUT VARCHAR2);
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  PROCEDURE GRAVA_ABASTECIMENTO(IO_CD_ABASTECIMENTO IN OUT ABASTECIMENTO.CD_ABASTECIMENTO%TYPE,
+                                I_NR_PLACA          IN VEICULO.NR_PLACA%TYPE,
+                                I_CD_FRENTISTA      IN FRENTISTA.CD_FRENTISTA%TYPE,
+                                I_QT_ABASTECIDA     IN ABASTECIMENTO.QT_ABASTECIDA%TYPE,
+                                I_KM_ABASTECIMENTO  IN ABASTECIMENTO.KM_ABASTECIMENTO%TYPE,
+                                O_MENSAGEM          OUT VARCHAR2);
 END PACK_POSTO;
 /
 CREATE OR REPLACE PACKAGE BODY PACK_POSTO IS
@@ -164,6 +188,312 @@ CREATE OR REPLACE PACKAGE BODY PACK_POSTO IS
     WHEN OTHERS THEN
       ROLLBACK;
       O_MENSAGEM := '[GRAVA_PROPRIETARIO] Erro no procedimento que grava o proprietário: '||SQLERRM;
+  END;
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  PROCEDURE GRAVA_VEICULO(I_NR_PLACA        IN VEICULO.NR_PLACA%TYPE,
+                          I_CD_COMBUSTIVEL  IN COMBUSTIVEL.CD_COMBUSTIVEL%TYPE,
+                          I_CD_PROPRIETARIO IN PROPRIETARIO.CD_PROPRIETARIO%TYPE,
+                          I_KM_ATUAL        IN VEICULO.KM_ATUAL%TYPE,
+                          O_MENSAGEM        OUT VARCHAR2) IS
+    E_GERAL  EXCEPTION;
+    V_COUNT  NUMBER;
+  BEGIN
+    IF I_NR_PLACA IS NULL THEN
+      O_MENSAGEM := 'A placa precisa ser informada';
+      RAISE E_GERAL;
+    END IF;
+    
+    IF I_CD_COMBUSTIVEL IS NULL THEN
+      O_MENSAGEM := 'O tipo de combustível precisa ser informado';
+      RAISE E_GERAL;
+    END IF;
+    
+    IF I_CD_PROPRIETARIO IS NULL THEN
+      O_MENSAGEM := 'O proprietário precisa ser informado';
+      RAISE E_GERAL;
+    END IF;
+    
+    BEGIN
+      SELECT COUNT(*)
+        INTO V_COUNT
+        FROM COMBUSTIVEL
+       WHERE COMBUSTIVEL.CD_COMBUSTIVEL = I_CD_COMBUSTIVEL;
+    EXCEPTION
+      WHEN OTHERS THEN
+        V_COUNT := 0;
+    END;
+    
+    IF NVL(V_COUNT,0) = 0 THEN
+      O_MENSAGEM := 'Nenhum combustível cadastrado com o código '||I_CD_COMBUSTIVEL||'. Verifique!';
+      RAISE E_GERAL;
+    END IF;
+    
+    BEGIN
+      SELECT COUNT(*)
+        INTO V_COUNT
+        FROM PROPRIETARIO
+       WHERE PROPRIETARIO.CD_PROPRIETARIO = I_CD_PROPRIETARIO;
+    EXCEPTION
+      WHEN OTHERS THEN
+        V_COUNT := 0;
+    END;
+    
+    IF NVL(V_COUNT,0) = 0 THEN
+      O_MENSAGEM := 'Nenhum proprietário cadastrado com o código '||I_CD_PROPRIETARIO||'. Verifique!';
+      RAISE E_GERAL;
+    END IF;
+    
+    BEGIN
+      INSERT INTO VEICULO(
+        NR_PLACA,
+        CD_COMBUSTIVEL,
+        CD_PROPRIETARIO,
+        KM_ATUAL,
+        DT_RECORD)
+      VALUES(
+        I_NR_PLACA,
+        I_CD_COMBUSTIVEL,
+        I_CD_PROPRIETARIO,
+        NVL(I_KM_ATUAL,0),
+        SYSDATE);
+    EXCEPTION
+      WHEN DUP_VAL_ON_INDEX THEN
+        BEGIN
+          UPDATE VEICULO
+             SET CD_PROPRIETARIO = NVL(I_CD_PROPRIETARIO,CD_PROPRIETARIO),
+                 KM_ATUAL = NVL(I_KM_ATUAL,KM_ATUAL),
+                 DT_REFRESH = SYSDATE
+           WHERE NR_PLACA = I_NR_PLACA;
+        EXCEPTION
+          WHEN OTHERS THEN
+            O_MENSAGEM := 'Erro ao atualizar o veículo '||I_NR_PLACA||': '||SQLERRM;
+            RAISE E_GERAL;
+        END;
+      WHEN OTHERS THEN
+        O_MENSAGEM := 'Erro ao inserir o veículo '||I_NR_PLACA||': '||SQLERRM;
+        RAISE E_GERAL;
+    END;
+    
+    COMMIT;
+  EXCEPTION
+    WHEN E_GERAL THEN
+      ROLLBACK;
+      O_MENSAGEM := '[GRAVA_VEICULO] '||O_MENSAGEM;
+    WHEN OTHERS THEN
+      ROLLBACK;
+      O_MENSAGEM := '[GRAVA_VEICULO] Erro no procedimento que insere o veículo: '||SQLERRM;
+  END;
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  PROCEDURE GRAVA_FRENTISTA(IO_CD_FRENTISTA IN OUT FRENTISTA.CD_FRENTISTA%TYPE,
+                            I_NM_FRENTISTA  IN FRENTISTA.NM_FRENTISTA%TYPE,
+                            I_PC_COMISSAO   IN FRENTISTA.PC_COMISSAO%TYPE,
+                            O_MENSAGEM      OUT VARCHAR2) IS
+    E_GERAL EXCEPTION;
+  BEGIN
+    IF I_NM_FRENTISTA IS NULL THEN
+      O_MENSAGEM := 'O nome do frentista precisa ser informado';
+      RAISE E_GERAL;
+    END IF;
+    
+    IF IO_CD_FRENTISTA IS NULL THEN
+      BEGIN
+        SELECT MAX(FRENTISTA.CD_FRENTISTA)
+          INTO IO_CD_FRENTISTA
+          FROM FRENTISTA;
+      EXCEPTION
+        WHEN OTHERS THEN
+          IO_CD_FRENTISTA := 0;
+      END;
+      IO_CD_FRENTISTA := NVL(IO_CD_FRENTISTA,0) + 1;
+    END IF;
+    
+    BEGIN
+      INSERT INTO FRENTISTA(
+        CD_FRENTISTA,
+        NM_FRENTISTA,
+        PC_COMISSAO,
+        DT_RECORD)
+      VALUES(
+        IO_CD_FRENTISTA,
+        I_NM_FRENTISTA,
+        I_PC_COMISSAO,
+        SYSDATE);
+    EXCEPTION
+      WHEN DUP_VAL_ON_INDEX THEN
+        BEGIN
+          UPDATE FRENTISTA
+             SET NM_FRENTISTA = NVL(I_NM_FRENTISTA,NM_FRENTISTA),
+                 PC_COMISSAO = NVL(I_PC_COMISSAO,0),
+                 DT_REFRESH = SYSDATE
+           WHERE CD_FRENTISTA = IO_CD_FRENTISTA;
+        EXCEPTION
+          WHEN OTHERS THEN
+            O_MENSAGEM := 'Erro ao atualizar o frentista '||IO_CD_FRENTISTA||': '||SQLERRM;
+            RAISE E_GERAL;
+        END;
+      WHEN OTHERS THEN
+        O_MENSAGEM := 'Erro ao gravar o frentista '||IO_CD_FRENTISTA||': '||SQLERRM;
+        RAISE E_GERAL;
+    END;
+    
+    COMMIT;
+    
+  EXCEPTION
+    WHEN E_GERAL THEN
+      ROLLBACK;
+      O_MENSAGEM := '[GRAVA_FRENTISTA] '||O_MENSAGEM;
+    WHEN OTHERS THEN
+      ROLLBACK;
+      O_MENSAGEM := '[GRAVA_FRENTISTA] Erro no procedimento que insere o frentista: '||SQLERRM;
+  END;
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  PROCEDURE GRAVA_ABASTECIMENTO(IO_CD_ABASTECIMENTO IN OUT ABASTECIMENTO.CD_ABASTECIMENTO%TYPE,
+                                I_NR_PLACA          IN VEICULO.NR_PLACA%TYPE,
+                                I_CD_FRENTISTA      IN FRENTISTA.CD_FRENTISTA%TYPE,
+                                I_QT_ABASTECIDA     IN ABASTECIMENTO.QT_ABASTECIDA%TYPE,
+                                I_KM_ABASTECIMENTO  IN ABASTECIMENTO.KM_ABASTECIMENTO%TYPE,
+                                O_MENSAGEM          OUT VARCHAR2) IS
+    E_GERAL           EXCEPTION;
+    V_COUNT           NUMBER;
+    V_VL_COMBUSTIVEL  COMBUSTIVEL.VL_COMBUSTIVEL%TYPE;
+  BEGIN
+    
+    IF I_NR_PLACA IS NULL THEN
+      O_MENSAGEM := 'A placa precisa ser informada';
+      RAISE E_GERAL;
+    END IF;
+    
+    IF I_CD_FRENTISTA IS NULL THEN
+      O_MENSAGEM := 'O frentista precisa ser informado';
+      RAISE E_GERAL;
+    END IF;
+    
+    IF I_QT_ABASTECIDA IS NULL THEN
+      O_MENSAGEM := 'A quantidade abastecida precisa ser informada';
+      RAISE E_GERAL;
+    END IF;
+    
+    BEGIN
+      SELECT COUNT(*)
+        INTO V_COUNT
+        FROM VEICULO 
+       WHERE VEICULO.NR_PLACA = I_NR_PLACA;
+    EXCEPTION
+      WHEN OTHERS THEN
+        V_COUNT := 0;
+    END;
+    
+    IF NVL(V_COUNT,0) = 0 THEN
+      O_MENSAGEM := 'Veículo de placa '||I_NR_PLACA||' não cadastrado';
+      RAISE E_GERAL;
+    END IF;
+    
+    BEGIN
+      SELECT COUNT(*)
+        INTO V_COUNT
+        FROM FRENTISTA
+       WHERE FRENTISTA.CD_FRENTISTA = I_CD_FRENTISTA;
+    EXCEPTION
+      WHEN OTHERS THEN
+        V_COUNT := 0;
+    END;
+    
+    IF NVL(V_COUNT,0) = 0 THEN
+      O_MENSAGEM := 'Frentista de código '||I_CD_FRENTISTA||' não cadastrado';
+      RAISE E_GERAL;
+    END IF;
+    
+    BEGIN
+      SELECT COMBUSTIVEL.VL_COMBUSTIVEL
+        INTO V_VL_COMBUSTIVEL
+        FROM COMBUSTIVEL,
+             VEICULO
+       WHERE COMBUSTIVEL.CD_COMBUSTIVEL = VEICULO.CD_COMBUSTIVEL
+         AND VEICULO.NR_PLACA = I_NR_PLACA;
+    EXCEPTION
+      WHEN OTHERS THEN
+        V_VL_COMBUSTIVEL := 0;
+    END;
+    
+    IF NVL(V_VL_COMBUSTIVEL,0) = 0 THEN
+      O_MENSAGEM := 'Valor não cadastrado para o combustível, ou zerado. Verifique o cadastro de combustível';
+      RAISE E_GERAL;
+    END IF;
+    
+    IF IO_CD_ABASTECIMENTO IS NULL THEN
+      BEGIN
+        SELECT MAX(ABASTECIMENTO.CD_ABASTECIMENTO)
+          INTO IO_CD_ABASTECIMENTO
+          FROM ABASTECIMENTO;
+      EXCEPTION
+        WHEN OTHERS THEN
+          IO_CD_ABASTECIMENTO := 0;
+      END;
+      IO_CD_ABASTECIMENTO := NVL(IO_CD_ABASTECIMENTO,0) + 1;
+      
+      BEGIN
+        UPDATE VEICULO 
+           SET KM_ATUAL = I_KM_ABASTECIMENTO
+         WHERE NR_PLACA = I_NR_PLACA;
+      EXCEPTION
+        WHEN OTHERS THEN
+          O_MENSAGEM := 'Erro ao atualizar a quilometragem do veículo '||I_NR_PLACA||': '||SQLERRM;
+          RAISE E_GERAL;
+      END;
+      
+    END IF;
+    
+    BEGIN
+      INSERT INTO ABASTECIMENTO(
+        CD_ABASTECIMENTO,
+        NR_PLACA,
+        CD_FRENTISTA,
+        QT_ABASTECIDA,
+        KM_ABASTECIMENTO,
+        VL_COMBUSTIVEL,
+        DT_RECORD)
+      VALUES(
+        IO_CD_ABASTECIMENTO,
+        I_NR_PLACA,
+        I_CD_FRENTISTA,
+        I_QT_ABASTECIDA,
+        I_KM_ABASTECIMENTO,
+        V_VL_COMBUSTIVEL,
+        SYSDATE);
+    EXCEPTION
+      WHEN DUP_VAL_ON_INDEX THEN
+        BEGIN
+          UPDATE ABASTECIMENTO
+             SET NR_PLACA = I_NR_PLACA,
+                 CD_FRENTISTA = I_CD_FRENTISTA,
+                 QT_ABASTECIDA = I_QT_ABASTECIDA,
+                 DT_REFRESH = SYSDATE
+           WHERE CD_ABASTECIMENTO = IO_CD_ABASTECIMENTO;
+        EXCEPTION
+          WHEN OTHERS THEN
+            O_MENSAGEM := 'Erro ao atualizar o abastecimento '||IO_CD_ABASTECIMENTO||': '||SQLERRM;
+            RAISE E_GERAL;
+        END;
+      WHEN OTHERS THEN
+        O_MENSAGEM := 'Erro ao inserir o abastecimento: '||SQLERRM;
+        RAISE E_GERAL;
+    END;
+    
+    COMMIT;
+    
+  EXCEPTION
+    WHEN E_GERAL THEN
+      ROLLBACK;
+      O_MENSAGEM := '[GRAVA_ABASTECIMENTO] '||O_MENSAGEM;
+    WHEN OTHERS THEN
+      ROLLBACK;
+      O_MENSAGEM := '[GRAVA_ABASTECIMENTO] Erro no procedimento que insere o abastecimento: '||SQLERRM;
   END;
   
 END PACK_POSTO;
