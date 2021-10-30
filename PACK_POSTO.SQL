@@ -36,6 +36,11 @@ CREATE OR REPLACE PACKAGE PACK_POSTO IS
                                 I_QT_ABASTECIDA     IN ABASTECIMENTO.QT_ABASTECIDA%TYPE,
                                 I_KM_ABASTECIMENTO  IN ABASTECIMENTO.KM_ABASTECIMENTO%TYPE,
                                 O_MENSAGEM          OUT VARCHAR2);
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  PROCEDURE EXCLUI_PROPRIETARIO(I_CD_PROPRIETARIO IN PROPRIETARIO.CD_PROPRIETARIO%TYPE,
+                                O_MENSAGEM        OUT VARCHAR2);
 END PACK_POSTO;
 /
 CREATE OR REPLACE PACKAGE BODY PACK_POSTO IS
@@ -496,6 +501,45 @@ CREATE OR REPLACE PACKAGE BODY PACK_POSTO IS
       ROLLBACK;
       O_MENSAGEM := '[GRAVA_ABASTECIMENTO] Erro no procedimento que insere o abastecimento: '||SQLERRM;
   END;
-  
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  PROCEDURE EXCLUI_PROPRIETARIO(I_CD_PROPRIETARIO IN PROPRIETARIO.CD_PROPRIETARIO%TYPE,
+                                O_MENSAGEM        OUT VARCHAR2) IS
+                                
+    E_GERAL   EXCEPTION;
+    V_COUNT   NUMBER;
+  BEGIN
+    BEGIN
+      SELECT COUNT(*)
+        INTO V_COUNT
+        FROM VEICULO
+       WHERE VEICULO.CD_PROPRIETARIO = I_CD_PROPRIETARIO;
+    EXCEPTION
+      WHEN OTHERS THEN
+        V_COUNT := 0;
+    END;
+    
+    IF V_COUNT > 0 THEN
+      O_MENSAGEM := 'O proprietário não pode ser excluido, pois existem veículos cadastrados que pertencem a ele';
+      RAISE E_GERAL;
+    END IF;
+    
+    BEGIN
+      DELETE PROPRIETARIO
+       WHERE CD_PROPRIETARIO = I_CD_PROPRIETARIO;
+    EXCEPTION
+      WHEN OTHERS THEN
+        O_MENSAGEM := 'Erro ao excluir o proprietário '||I_CD_PROPRIETARIO||': '||SQLERRM;
+        RAISE E_GERAL;
+    END;
+  EXCEPTION
+    WHEN E_GERAL THEN
+      ROLLBACK;
+      O_MENSAGEM := '[EXCLUI_PROPRIETARIO] '||O_MENSAGEM;
+    WHEN OTHERS THEN
+      ROLLBACK;
+      O_MENSAGEM := '[EXCLUI_PROPRIETARIO] Erro no procedimento de exclusão do proprietário: '||SQLERRM;
+  END;
 END PACK_POSTO;
 /
