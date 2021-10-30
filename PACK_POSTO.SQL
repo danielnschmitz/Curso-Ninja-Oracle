@@ -41,6 +41,11 @@ CREATE OR REPLACE PACKAGE PACK_POSTO IS
   ----------------------------------------------------------------------------------------------------------
   PROCEDURE EXCLUI_PROPRIETARIO(I_CD_PROPRIETARIO IN PROPRIETARIO.CD_PROPRIETARIO%TYPE,
                                 O_MENSAGEM        OUT VARCHAR2);
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  PROCEDURE EXCLUI_COMBUSTIVEL(I_CD_COMBUSTIVEL IN COMBUSTIVEL.CD_COMBUSTIVEL%TYPE,
+                               O_MENSAGEM        OUT VARCHAR2);
 END PACK_POSTO;
 /
 CREATE OR REPLACE PACKAGE BODY PACK_POSTO IS
@@ -540,6 +545,46 @@ CREATE OR REPLACE PACKAGE BODY PACK_POSTO IS
     WHEN OTHERS THEN
       ROLLBACK;
       O_MENSAGEM := '[EXCLUI_PROPRIETARIO] Erro no procedimento de exclusão do proprietário: '||SQLERRM;
+  END;
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  PROCEDURE EXCLUI_COMBUSTIVEL(I_CD_COMBUSTIVEL IN COMBUSTIVEL.CD_COMBUSTIVEL%TYPE,
+                               O_MENSAGEM        OUT VARCHAR2) IS
+                                
+    E_GERAL   EXCEPTION;
+    V_COUNT   NUMBER;
+  BEGIN
+    BEGIN
+      SELECT COUNT(*)
+        INTO V_COUNT
+        FROM VEICULO
+       WHERE VEICULO.CD_COMBUSTIVEL = I_CD_COMBUSTIVEL;
+    EXCEPTION
+      WHEN OTHERS THEN
+        V_COUNT := 0;
+    END;
+    
+    IF V_COUNT > 0 THEN
+      O_MENSAGEM := 'O combustível não pode ser excluido, pois existem veículos associados a ele';
+      RAISE E_GERAL;
+    END IF;
+    
+    BEGIN
+      DELETE COMBUSTIVEL
+       WHERE CD_COMBUSTIVEL = I_CD_COMBUSTIVEL;
+    EXCEPTION
+      WHEN OTHERS THEN
+        O_MENSAGEM := 'Erro ao excluir o combustivel '||I_CD_COMBUSTIVEL||': '||SQLERRM;
+        RAISE E_GERAL;
+    END;
+  EXCEPTION
+    WHEN E_GERAL THEN
+      ROLLBACK;
+      O_MENSAGEM := '[EXCLUI_COMBUSTIVEL] '||O_MENSAGEM;
+    WHEN OTHERS THEN
+      ROLLBACK;
+      O_MENSAGEM := '[EXCLUI_COMBUSTIVEL] Erro no procedimento de exclusão do proprietário: '||SQLERRM;
   END;
 END PACK_POSTO;
 /
