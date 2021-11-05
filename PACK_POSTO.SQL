@@ -51,6 +51,11 @@ CREATE OR REPLACE PACKAGE PACK_POSTO IS
   ----------------------------------------------------------------------------------------------------------
   PROCEDURE EXCLUI_VEICULO(I_NR_PLACA IN VEICULO.NR_PLACA%TYPE,
                            O_MENSAGEM OUT VARCHAR2);
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  PROCEDURE EXCLUI_FRENTISTA(I_CD_FRENTISTA IN FRENTISTA.CD_FRENTISTA%TYPE,
+                             O_MENSAGEM     OUT VARCHAR2);
 END PACK_POSTO;
 /
 CREATE OR REPLACE PACKAGE BODY PACK_POSTO IS
@@ -636,6 +641,48 @@ CREATE OR REPLACE PACKAGE BODY PACK_POSTO IS
     WHEN OTHERS THEN
       ROLLBACK;
       O_MENSAGEM := '[EXCLUI_VEICULO] Erro no procedimento de exclusão do veículo: '||SQLERRM;
+  END;
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  PROCEDURE EXCLUI_FRENTISTA(I_CD_FRENTISTA IN FRENTISTA.CD_FRENTISTA%TYPE,
+                             O_MENSAGEM     OUT VARCHAR2) IS
+                                
+    E_GERAL   EXCEPTION;
+    V_COUNT   NUMBER;
+  BEGIN
+    BEGIN
+      SELECT COUNT(*)
+        INTO V_COUNT
+        FROM ABASTECIMENTO
+       WHERE ABASTECIMENTO.CD_FRENTISTA = I_CD_FRENTISTA;
+    EXCEPTION
+      WHEN OTHERS THEN
+        V_COUNT := 0;
+    END;
+    
+    IF V_COUNT > 0 THEN
+      O_MENSAGEM := 'O frentista não pode ser excluido, pois existem abastecimentos associados a ele';
+      RAISE E_GERAL;
+    END IF;
+    
+    BEGIN
+      DELETE FRENTISTA
+       WHERE CD_FRENTISTA = I_CD_FRENTISTA;
+    EXCEPTION
+      WHEN OTHERS THEN
+        O_MENSAGEM := 'Erro ao excluir o frentista '||I_CD_FRENTISTA||': '||SQLERRM;
+        RAISE E_GERAL;
+    END;
+    
+    COMMIT;
+  EXCEPTION
+    WHEN E_GERAL THEN
+      ROLLBACK;
+      O_MENSAGEM := '[EXCLUI_FRENTISTA] '||O_MENSAGEM;
+    WHEN OTHERS THEN
+      ROLLBACK;
+      O_MENSAGEM := '[EXCLUI_FRENTISTA] Erro no procedimento de exclusão do frentista: '||SQLERRM;
   END;
 END PACK_POSTO;
 /
