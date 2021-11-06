@@ -56,6 +56,11 @@ CREATE OR REPLACE PACKAGE PACK_POSTO IS
   ----------------------------------------------------------------------------------------------------------
   PROCEDURE EXCLUI_FRENTISTA(I_CD_FRENTISTA IN FRENTISTA.CD_FRENTISTA%TYPE,
                              O_MENSAGEM     OUT VARCHAR2);
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  PROCEDURE EXCLUI_ABASTECIMENTO(I_CD_ABASTECIMENTO IN ABASTECIMENTO.CD_ABASTECIMENTO%TYPE,
+                                 O_MENSAGEM         OUT VARCHAR2);
 END PACK_POSTO;
 /
 CREATE OR REPLACE PACKAGE BODY PACK_POSTO IS
@@ -683,6 +688,33 @@ CREATE OR REPLACE PACKAGE BODY PACK_POSTO IS
     WHEN OTHERS THEN
       ROLLBACK;
       O_MENSAGEM := '[EXCLUI_FRENTISTA] Erro no procedimento de exclusão do frentista: '||SQLERRM;
+  END;
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------
+  PROCEDURE EXCLUI_ABASTECIMENTO(I_CD_ABASTECIMENTO IN ABASTECIMENTO.CD_ABASTECIMENTO%TYPE,
+                                 O_MENSAGEM         OUT VARCHAR2) IS
+                                
+    E_GERAL   EXCEPTION;
+  BEGIN
+    
+    BEGIN
+      DELETE ABASTECIMENTO
+       WHERE CD_ABASTECIMENTO = I_CD_ABASTECIMENTO;
+    EXCEPTION
+      WHEN OTHERS THEN
+        O_MENSAGEM := 'Erro ao excluir o abastecimento '||I_CD_ABASTECIMENTO||': '||SQLERRM;
+        RAISE E_GERAL;
+    END;
+    
+    COMMIT;
+  EXCEPTION
+    WHEN E_GERAL THEN
+      ROLLBACK;
+      O_MENSAGEM := '[EXCLUI_ABASTECIMENTO] '||O_MENSAGEM;
+    WHEN OTHERS THEN
+      ROLLBACK;
+      O_MENSAGEM := '[EXCLUI_ABASTECIMENTO] Erro no procedimento de exclusão do abastecimento: '||SQLERRM;
   END;
 END PACK_POSTO;
 /
